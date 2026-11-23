@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Breakout Room: The Soho Outbreak, 1854</title>
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--text:#1c2430;--muted:#5a6676;--accent:#0070c0;--ok:#1b7f3b;--bad:#b3261e;--line:#cfd8e3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10151c;--card:#1a222d;--text:#e8edf3;--muted:#9fabba;--accent:#5aa9ec;--ok:#58c27d;--bad:#ff8a80;--line:#33404f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10151c;--card:#1a222d;--text:#e8edf3;--muted:#9fabba;--accent:#5aa9ec;--ok:#58c27d;--bad:#ff8a80;--line:#33404f;color-scheme:dark}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;line-height:1.5}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.5rem;margin:0 0 4px;color:var(--accent)}
+h2{font-size:1.2rem;margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}
+.locks{display:flex;gap:8px;margin:12px 0}
+.lock{flex:1;text-align:center;padding:8px 4px;border:1px solid var(--line);border-radius:8px;font-weight:bold;background:var(--card)}
+.lock.done{border-color:var(--ok);color:var(--ok)}
+.lock.now{border-color:var(--accent);color:var(--accent)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin:8px 0}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+th{background:var(--accent);color:#fff}
+.opt,button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--accent);background:var(--card);color:var(--text);padding:10px 12px;margin:6px 0;display:block;width:100%;text-align:left}
+button.go{background:var(--accent);color:#fff;text-align:center;display:inline-block;width:auto;padding:10px 18px}
+button.ghost{border-color:var(--line);color:var(--muted);display:inline-block;width:auto;text-align:center}
+.opt:hover,button:hover{filter:brightness(1.06)}
+input[type=text]{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);width:100%;max-width:280px}
+.talk{border-left:4px solid var(--accent);padding:4px 12px;color:var(--muted);margin:12px 0}
+.msg{min-height:1.4em;font-weight:bold;margin-top:8px}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.digit{font-size:2rem;font-weight:bold;color:var(--ok)}
+.small{font-size:.85rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<h1>Breakout Room: The Soho Outbreak, 1854</h1>
+<p class="sub">Work as a team of three or four. Four locks, four digits, one final code. Every person must give a reason before your group answers.</p>
+<div class="locks" id="locks"></div>
+<div id="stage"></div>
+<p class="small">The case numbers in this room are simplified and invented for learning. The story is based on the 1854 cholera outbreak in Soho, London, investigated by Dr John Snow.</p>
+</main>
+<script>
+var CODE = "4852";
+var stages = [
+ {t:"Lock 1: The Map", story:"Soho, London, 1854. Cholera is spreading fast. Dr John Snow records where people fall ill. Study the case table, then decide which water pump the cases cluster around.",
+  table:[["Street","Cases","Nearest pump"],["Broad Street","28","Broad Street pump"],["Dufours Place","11","Broad Street pump"],["Marshall Street","6","Marshall Street pump"],["Berwick Street","5","Berwick Street pump"]],
+  q:"Which pump is nearest to the largest share of cases?", type:"mc",
+  opts:["Berwick Street pump","Broad Street pump","Marshall Street pump"], ans:1, digit:"4",
+  talk:"Try: “Shall we count the cases for each pump first?” or “What makes you say that?”",
+  hint:"Add up the cases for each pump, not each street.",
+  why:"Mapping data can show a pattern that is invisible in a list. Correct: Broad Street pump (39 of 50 cases)."},
+ {t:"Lock 2: The Exceptions", story:"Near the Broad Street pump, two groups stayed mostly healthy: the workers at a brewery and the residents of a workhouse. Snow treated these exceptions as evidence, not as a nuisance.",
+  q:"Which explanation best fits the idea that the Broad Street pump was the source?", type:"mc",
+  opts:["They were simply stronger than everyone else.","They had their own water supply, so most of them did not use the pump.","They lived too far from the smell of the street.","They had all moved away that week."], ans:1, digit:"8",
+  talk:"Try: “Can I build on that?” or “What would we expect to see if that were true?”",
+  hint:"Ask what these two groups had in common that changes where their water came from.",
+  why:"An exception that can be explained strengthens a hypothesis. Always ask what the odd cases tell you."},
+ {t:"Lock 3: The Rival Theory", story:"Many doctors believed cholera spread through bad air, called miasma. Your team must test the rival theory. Look for evidence that bad air alone cannot explain.",
+  q:"Which observation is hardest to explain with bad air alone?", type:"mc",
+  opts:["The streets smelled unpleasant.","People living far from Broad Street who had its water brought to them became ill, while nearby people who did not drink it stayed well.","Cases were reported in warm weather.","Many respected doctors supported the bad air view."], ans:1, digit:"5",
+  talk:"Try: “Let’s challenge it: what would bad air predict here?” or “I disagree because…”",
+  hint:"Pick the observation where location and illness do not match, but water use and illness do.",
+  why:"Good collaboration includes challenging an idea with reasons. Authority is not evidence."},
+ {t:"Lock 4: The Decision", story:"The evidence is strong but not perfect, and every day of delay costs lives. The authorities acted on it. They removed one part of the pump so that it could not be used.",
+  q:"Which part of the pump was removed? Type one word.", type:"text",
+  ans:"handle", digit:"2",
+  talk:"Try: “Shall we agree what the risk of waiting is before we decide?”",
+  hint:"It is the part you move up and down to draw the water.",
+  why:"Public health often means acting on the best available evidence. Explaining the reason clearly is what persuades others."}
+];
+var cur = 0, digits = [];
+var stage = document.getElementById("stage"), locks = document.getElementById("locks");
+
+function drawLocks(){
+  locks.innerHTML = "";
+  for(var i=0;i<4;i++){
+    var d = document.createElement("div");
+    d.className = "lock" + (i<digits.length ? " done" : (i===cur ? " now" : ""));
+    d.textContent = i<digits.length ? digits[i] : "?";
+    locks.appendChild(d);
+  }
+}
+function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!==undefined) e.innerHTML=html; return e; }
+
+function render(){
+  drawLocks(); stage.innerHTML = "";
+  if(cur >= stages.length){ return renderFinal(); }
+  var s = stages[cur], card = el("div","card");
+  card.appendChild(el("h2","",s.t));
+  card.appendChild(el("p","",s.story));
+  if(s.table){
+    var w = el("div","tablewrap"), t = el("table"); 
+    s.table.forEach(function(r,i){ var tr=el("tr"); r.forEach(function(c){ tr.appendChild(el(i?"td":"th","",c)); }); t.appendChild(tr); });
+    w.appendChild(t); card.appendChild(w);
+  }
+  card.appendChild(el("p","","<b>"+s.q+"</b>"));
+  card.appendChild(el("div","talk",s.talk));
+  var msg = el("div","msg");
+  function win(){
+    msg.className="msg ok"; msg.textContent="Lock opened.";
+    digits.push(s.digit);
+    drawLocks();
+    var box = el("div","card");
+    box.appendChild(el("div","","Your digit: <span class='digit'>"+s.digit+"</span>"));
+    box.appendChild(el("p","","<b>Why it matters:</b> "+s.why));
+    var next = el("button","go", cur===3 ? "Go to the final door" : "Next lock");
+    next.onclick = function(){ cur++; render(); };
+    box.appendChild(next); stage.appendChild(box);
+  }
+  function wrong(){ msg.className="msg bad"; msg.textContent="Not yet. Discuss it as a team, then try again. A hint may help."; }
+  if(s.type==="mc"){
+    s.opts.forEach(function(o,i){
+      var b = el("button","opt",o);
+      b.onclick = function(){ if(stage.querySelector(".digit")) return; (i===s.ans) ? (b.style.borderColor="var(--ok)", win()) : wrong(); };
+      card.appendChild(b);
+    });
+  } else {
+    var inp = el("input"); inp.type="text"; inp.setAttribute("aria-label","Your answer"); card.appendChild(inp);
+    var go = el("button","go","Unlock"); go.style.marginLeft="8px";
+    go.onclick = function(){ if(stage.querySelector(".digit")) return; (inp.value.trim().toLowerCase()===s.ans) ? win() : wrong(); };
+    card.appendChild(go);
+  }
+  card.appendChild(msg);
+  var hb = el("button","ghost","Need a hint?"); var hp = el("p","small");
+  hb.onclick = function(){ hp.textContent = "Hint: "+s.hint; };
+  card.appendChild(hb); card.appendChild(hp);
+  stage.appendChild(card);
+}
+
+function renderFinal(){
+  var card = el("div","card");
+  card.appendChild(el("h2","","The Final Door"));
+  card.appendChild(el("p","","Put your four digits in the order you earned them to open the report room."));
+  var inp = el("input"); inp.type="text"; inp.maxLength=4; inp.setAttribute("aria-label","Four digit code"); card.appendChild(inp);
+  var go = el("button","go","Open"); go.style.marginLeft="8px"; card.appendChild(go);
+  var msg = el("div","msg"); card.appendChild(msg);
+  go.onclick = function(){
+    if(inp.value.trim()===CODE){
+      stage.innerHTML="";
+      var f = el("div","card");
+      f.appendChild(el("h2","","Case closed"));
+      f.appendChild(el("p","","Your team used mapping, exceptions, a rival theory and a decision to link a place, a pattern and an action. Now debrief together:"));
+      var ul = el("ul");
+      ["Which collaborative behaviour helped your team most, and when did you see it?","Whose idea changed your thinking, and what reason did they give?","Which lock would your team have failed without a question like “what do you mean?”","What one target will your team set for the next task?"].forEach(function(q){ ul.appendChild(el("li","",q)); });
+      f.appendChild(ul); stage.appendChild(f); drawLocks();
+    } else { msg.className="msg bad"; msg.textContent="That code does not open the door. Check the order of your digits."; }
+  };
+  stage.appendChild(card);
+}
+render();
+</script>
+</body>
+</html>
